@@ -44,7 +44,15 @@ module Hanami
                 system_call.call(
                   "pg_dump --schema-only --no-privileges --no-owner --file #{structure_file} #{escaped_name}",
                   env: cli_env_vars
-                )
+                ).tap do
+                  next unless it.successful?
+                  dump_lines = File.readlines(structure_file)
+                  File.open(structure_file, "w") do |f|
+                    dump_lines.each do |line|
+                      f.write(line) unless line =~ /^\\(un)?restrict/
+                    end
+                  end
+                end
               end
 
               # @api private
